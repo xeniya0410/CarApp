@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.carapps.model.Car
 import com.example.carapps.viewmodel.CarViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +36,17 @@ fun AddCarScreen(
 
     LaunchedEffect(Unit) {
         if (brands.isEmpty()) viewModel.loadBrands()
+    }
+
+    // Флаг блокировки кнопки
+    var isButtonEnabled by remember { mutableStateOf(true) }
+
+    // Логика для управления состоянием кнопки
+    LaunchedEffect(isButtonEnabled) {
+        if (!isButtonEnabled) {
+            delay(1000) // Таймаут блокировки кнопки
+            isButtonEnabled = true
+        }
     }
 
     Scaffold(
@@ -101,7 +113,6 @@ fun AddCarScreen(
                                 selectedBrandId = brand.brandId
                                 selectedBrandName = brand.name
                                 expanded = false
-                                Log.d("AddCarScreen", "Выбран бренд: ${brand.name}, id: ${brand.brandId}")
                             }
                         )
                     }
@@ -110,32 +121,42 @@ fun AddCarScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(onClick = {
-                val carYear = year.toIntOrNull()
-                val carMileage = mileage.toIntOrNull()
+            Button(
+                onClick = {
+                    if (isButtonEnabled) {
+                        isButtonEnabled = false
 
-                if (name.isNotBlank() && carYear != null && carMileage != null && selectedBrandId != null) {
-                    val car = Car(
-                        name = name,
-                        year = carYear,
-                        mileage = carMileage,
-                        description = description,
-                        brandId = selectedBrandId!!
-                    )
-                    viewModel.addCar(car)
+                        // Логика добавления автомобиля
+                        val carYear = year.toIntOrNull()
+                        val carMileage = mileage.toIntOrNull()
 
-                    name = ""
-                    year = ""
-                    mileage = ""
-                    description = ""
-                    selectedBrandId = null
-                    selectedBrandName = "Выбрать марку"
+                        if (name.isNotBlank() && carYear != null && carMileage != null && selectedBrandId != null) {
+                            val car = Car(
+                                name = name,
+                                year = carYear,
+                                mileage = carMileage,
+                                description = description,
+                                brandId = selectedBrandId!!
+                            )
+                            viewModel.addCar(car)
 
-                    navController.popBackStack()
-                } else {
-                    Log.i("AddCarScreen", "Not all fields are filled correctly!")
-                }
-            }) {
+                            // Очистка полей
+                            name = ""
+                            year = ""
+                            mileage = ""
+                            description = ""
+                            selectedBrandId = null
+                            selectedBrandName = "Выбрать марку"
+
+                            // Навигация назад
+                            navController.popBackStack()
+                        } else {
+                            Log.i("AddCarScreen", "Not all fields are filled correctly!")
+                        }
+                    }
+                },
+                enabled = isButtonEnabled
+            ) {
                 Text("Добавить автомобиль")
             }
         }
